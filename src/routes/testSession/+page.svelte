@@ -18,7 +18,6 @@
 				goto('/');
 			}
 		});
-
 		// Cleanup the observer when the component is destroyed
 		return () => unsubscribe();
 	});

@@ -13,9 +13,9 @@ export const handle = async ({ event, resolve }) => {
     });
 
     // Protect routes that require authentication
-    if (event.url.pathname.startsWith('/main') && !user) {
-        throw redirect(302, '/');
-    }
+    //if (event.url.pathname.startsWith('/main') && !user) {
+    //    throw redirect(302, '/');
+    //}
 
     return resolve(event);
 };

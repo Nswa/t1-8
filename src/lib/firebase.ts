@@ -1,6 +1,6 @@
 import { getApps, initializeApp } from 'firebase/app';
 import { getFirestore, collection, addDoc, Timestamp } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 
 export const firebaseConfig = {
     apiKey: "AIzaSyAKC7-cMMvDDfyyM2bV0-wHePePzfCUoRo",
@@ -22,5 +22,8 @@ if (!getApps().length) {
 }
 
 const firebaseAuth = getAuth(firebaseApp);
+
+// set persistence
+setPersistence(firebaseAuth, browserLocalPersistence);
 
 export { firebaseApp, firebaseAuth };

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-
 	import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 	import { firebaseAuth } from '$lib/firebase';
 
@@ -9,6 +8,7 @@
 
 	let showSuccessMessage = false;
 	let success: boolean | undefined = undefined;
+	let errorMessage: string = '';
 
 	const register = () => {
 		createUserWithEmailAndPassword(firebaseAuth, email, password)
@@ -20,7 +20,7 @@
 			})
 			.catch((error) => {
 				const errorCode = error.code;
-				const errorMessage = error.message;
+				errorMessage = error.message;
 				console.log(errorCode, errorMessage);
 
 				success = false;
@@ -30,11 +30,11 @@
 	const login = () => {
 		signInWithEmailAndPassword(firebaseAuth, email, password)
 			.then(() => {
-				goto('/main');//main page
+				goto('/main'); //main page
 			})
 			.catch((error) => {
 				const errorCode = error.code;
-				const errorMessage = error.message;
+				errorMessage = error.message;
 				console.log(errorCode, errorMessage);
 
 				success = false;
@@ -51,11 +51,7 @@
 <div class="container" class:right-panel-active={rightPanelActive}>
 	<div class="form-container sign-up-container">
 		<form on:submit|preventDefault={register}>
-			{#if !success && success !== undefined}
-				<div class="p-8 text-red-500 bg-red-100">
-					There was an error registering. Please try again.
-				</div>
-			{/if}
+			
 			<h1>Create Account</h1>
 			<div class="social-container">
 				<a href="null" class="social" aria-label="Sign up with Facebook"
@@ -73,6 +69,11 @@
 			<input type="email" placeholder="Email" required bind:value={email} />
 			<input type="password" placeholder="Password" required bind:value={password} />
 			<button type="submit">Sign Up</button>
+			{#if !success && success !== undefined}
+				<div class="error-message">
+					There was an error registering. Please try again.
+				</div>
+			{/if}
 			{#if showSuccessMessage}
 				<p class:visible={showSuccessMessage}>Successfully signed up!</p>
 			{/if}
@@ -97,6 +98,12 @@
 			<input type="password" placeholder="Password" required bind:value={password} />
 			<a href="null">Forgot your password?</a>
 			<button type="submit">Sign In</button>
+			{#if !success && success !== undefined}
+				<div class="error-message">
+					Incorrect username or password.
+					<!-- <p> {errorMessage} </p> -->
+				</div>
+			{/if}
 		</form>
 	</div>
 	<div class="overlay-container">
@@ -360,5 +367,13 @@
 		transition: opacity 0.5s ease-in-out;
 	}
 
-
+	.error-message {
+		background-color: #ffe6e6; /* Light red background */
+		color: #d9534f; /* Red text color */
+		/* padding: 16px;  Add some padding */
+		/* border: 1px solid #d9534f;  Red border */
+		border-radius: 4px; /* Rounded corners */
+		font-size: 14px; /* Adjust font size */
+		margin: 16px 0; /* Add space around the message */
+	}
 </style>

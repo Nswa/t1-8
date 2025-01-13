@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
+  export let loggedInUserEmail: string | null = null; // Accept the prop
+
   let searchQuery = '';
 
   const menuItems = [
@@ -63,6 +65,11 @@
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="search-icon" on:click={performSearch}>&#128269;</div>
   </div>
+  {#if loggedInUserEmail}
+    <div class="user-email">
+      <p>You are logged in as: <strong>{loggedInUserEmail}</strong></p>
+    </div>
+  {/if}
 </nav>
 
 <style>
@@ -168,5 +175,12 @@
   .search-icon:hover {
     color: #ffffff;
   }
-</style>
 
+  .user-email {
+    color: var(--menu-text);
+    font-size: 13px;
+    margin-left: 10px;
+    padding: 0 8px;
+    cursor: default;
+  }
+</style>
