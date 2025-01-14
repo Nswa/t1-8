@@ -232,17 +232,36 @@
 
 <style>
 	:global(:root) {
-		font-size: 16px;
-		font-family: 'Open Sans';
 		--transition-speed: 400ms;
+		--font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+		--font-editor: 'JetBrains Mono', monospace;
 	}
+
 	:global(html, body) {
-		margin: 0%;
+		margin: 0;
 		height: 100%;
+		font-family: var(--font-ui);
+	}
+
+	/* Menubar specific styles */
+	:global(.menubar) {
+		font-family: var(--font-ui);
+		font-size: 14px;
+	}
+
+	/* ActivityBar specific styles */
+	:global(.activitybar) {
+		font-family: var(--font-ui);
+		font-size: 14px;
+	}
+
+	/* Editor container */
+	.editor-container {
+		font-family: var(--font-editor);
 	}
 
 	@media only screen and (max-width: 600px) {
-		:global(.editor-container) {
+		.editor-container {
 			padding-left: 0;
 		}
 	}
