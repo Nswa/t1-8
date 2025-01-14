@@ -1,6 +1,6 @@
 <script lang="ts">
 	//auth session
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { firebaseAuth, firestore } from '$lib/firebase';
 	import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -30,6 +30,13 @@
 	let currentJournalId: string | null = null;
 	
 	let editorInitialized = false;
+	let isLayoutReady = false;
+	
+	// Initialize layout after mount
+	onMount(async () => {
+		await tick(); // Wait for initial layout
+		isLayoutReady = true;
+	});
 	
 	let onCreateNew = () => {
 		// Clear current journal ID
@@ -240,13 +247,23 @@
 	:global(html, body) {
 		margin: 0;
 		height: 100%;
+		width: 100%;
+		overflow-x: hidden;
 		font-family: var(--font-ui);
+	}
+
+	:global(#svelte) {
+		width: 100vw;
+		overflow-x: hidden;
 	}
 
 	/* Menubar specific styles */
 	:global(.menubar) {
 		font-family: var(--font-ui);
 		font-size: 14px;
+		width: 100vw;
+		box-sizing: border-box;
+		overflow: hidden;
 	}
 
 	/* ActivityBar specific styles */
