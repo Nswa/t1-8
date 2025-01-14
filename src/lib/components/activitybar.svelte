@@ -32,7 +32,25 @@
   }
 
   .collapsed {
-    transform: translateX(-100%);
+    transform: translateX(-240px);
+  }
+
+  .handle {
+    position: absolute;
+    right: -5px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 5px;
+    height: 60px;
+    background: #2d2d2d;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+    transition: background 0.2s ease;
+  }
+
+  .handle:hover {
+    background: #3d3d3d;
   }
 
   .header {
@@ -87,10 +105,13 @@
 </style>
 
 <div class="activity-bar" class:collapsed={$isCollapsed}>
+  {#if $isCollapsed}
+    <div class="handle" on:click={() => $isCollapsed = false}></div>
+  {/if}
   <div class="header">
     <span>My Journals</span>
     <button class="collapse-btn" on:click={() => $isCollapsed = !$isCollapsed}>
-      {$isCollapsed ? '»' : '«'}
+      {$isCollapsed ? '' : '«'}
     </button>
   </div>
   
