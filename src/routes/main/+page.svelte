@@ -2,13 +2,38 @@
 	//auth session
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { firebaseAuth } from '$lib/firebase';
+	import { firebaseAuth, firestore } from '$lib/firebase';
 	import { onAuthStateChanged, signOut } from 'firebase/auth';
+	import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 	let loggedInUserEmail: string | null = null;
+	let userId: string | null = null;
 
 	import MonacoEditor from '$lib/editor/monaco.svelte';
 	import Menubar from '$lib/components/menubar.svelte';
 	let code = 'console.log("Hello, Monaco!");';
+
+	const saveJournal = async () => {
+		if (!firebaseAuth.currentUser) {
+			console.error('No user logged in');
+			return;
+		}
+		const userId = firebaseAuth.currentUser.uid;
+		
+		try {
+			const content = editorComponent.getContent();
+			const journalRef = doc(firestore, 'journals', userId);
+			
+			await setDoc(journalRef, {
+				content,
+				lastSaved: serverTimestamp(),
+				email: loggedInUserEmail
+			}, { merge: true });
+			
+			console.log('Journal saved successfully');
+		} catch (error) {
+			console.error('Error saving journal:', error);
+		}
+	};
 
 	let editorComponent: MonacoEditor;
 
@@ -39,7 +64,7 @@
 	};
 </script>
 
-<Menubar loggedInUserEmail={loggedInUserEmail} />
+<Menubar loggedInUserEmail={loggedInUserEmail} onSave={saveJournal} />
 
 <div class="editor-container">
 	<MonacoEditor

@@ -26,4 +26,4 @@ const firebaseAuth = getAuth(firebaseApp);
 // set persistence
 setPersistence(firebaseAuth, browserLocalPersistence);
 
-export { firebaseApp, firebaseAuth };
+export { firebaseApp, firebaseAuth, db as firestore };

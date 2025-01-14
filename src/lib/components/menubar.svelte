@@ -9,15 +9,57 @@
 	let searchQuery = '';
 	let showUserMenu = false; // State to control the visibility of the user menu
 
+	export let onSave: () => void;
+
 	const menuItems = [
-		{ name: 'File', items: ['New File', 'Open File...', 'Save', 'Save As...', 'Exit'] },
-		{ name: 'Edit', items: ['Undo', 'Redo', 'Cut', 'Copy', 'Paste'] },
-		{ name: 'Selection', items: ['Select All', 'Expand Selection', 'Shrink Selection'] },
-		{ name: 'View', items: ['Command Palette...', 'Explorer', 'Search', 'Source Control', 'Run'] },
-		{ name: 'Go', items: ['Back', 'Forward', 'Go to File...', 'Go to Symbol...'] },
-		{ name: 'Run', items: ['Start Debugging', 'Run Without Debugging', 'Stop Debugging'] },
-		{ name: 'Terminal', items: ['New Terminal', 'Split Terminal', 'Run Task...'] },
-		{ name: 'Help', items: ['Welcome', 'Documentation', 'Release Notes', 'About'] }
+		{ name: 'File', items: [
+			{ name: 'New File', action: () => {} },
+			{ name: 'Open File...', action: () => {} },
+			{ name: 'Save', action: () => onSave() },
+			{ name: 'Save As...', action: () => {} },
+			{ name: 'Exit', action: () => {} }
+		] },
+		{ name: 'Edit', items: [
+			{ name: 'Undo', action: () => {} },
+			{ name: 'Redo', action: () => {} },
+			{ name: 'Cut', action: () => {} },
+			{ name: 'Copy', action: () => {} },
+			{ name: 'Paste', action: () => {} }
+		] },
+		{ name: 'Selection', items: [
+			{ name: 'Select All', action: () => {} },
+			{ name: 'Expand Selection', action: () => {} },
+			{ name: 'Shrink Selection', action: () => {} }
+		] },
+		{ name: 'View', items: [
+			{ name: 'Command Palette...', action: () => {} },
+			{ name: 'Explorer', action: () => {} },
+			{ name: 'Search', action: () => {} },
+			{ name: 'Source Control', action: () => {} },
+			{ name: 'Run', action: () => {} }
+		] },
+		{ name: 'Go', items: [
+			{ name: 'Back', action: () => {} },
+			{ name: 'Forward', action: () => {} },
+			{ name: 'Go to File...', action: () => {} },
+			{ name: 'Go to Symbol...', action: () => {} }
+		] },
+		{ name: 'Run', items: [
+			{ name: 'Start Debugging', action: () => {} },
+			{ name: 'Run Without Debugging', action: () => {} },
+			{ name: 'Stop Debugging', action: () => {} }
+		] },
+		{ name: 'Terminal', items: [
+			{ name: 'New Terminal', action: () => {} },
+			{ name: 'Split Terminal', action: () => {} },
+			{ name: 'Run Task...', action: () => {} }
+		] },
+		{ name: 'Help', items: [
+			{ name: 'Welcome', action: () => {} },
+			{ name: 'Documentation', action: () => {} },
+			{ name: 'Release Notes', action: () => {} },
+			{ name: 'About', action: () => {} }
+		] }
 	];
 
 	function performSearch() {
@@ -64,7 +106,7 @@
 				{name}
 				<div class="dropdown">
 					{#each items as item}
-						<div class="dropdown-item">{item}</div>
+						<div class="dropdown-item" on:click={item.action}>{item.name}</div>
 					{/each}
 				</div>
 			</div>
