@@ -4,30 +4,66 @@
 	import { goto } from '$app/navigation';
 	import { firebaseAuth, firestore } from '$lib/firebase';
 	import { onAuthStateChanged, signOut } from 'firebase/auth';
-	import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+	import { doc, setDoc, updateDoc, serverTimestamp, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 	let loggedInUserEmail: string | null = null;
 	let userId: string | null = null;
 
 	import MonacoEditor from '$lib/editor/monaco.svelte';
 	import Menubar from '$lib/components/menubar.svelte';
-	let code = 'console.log("Hello, Monaco!");';
+	import ActivityBar from '$lib/components/activitybar.svelte';
+	import { writable } from 'svelte/store';
 
+	let code = 'console.log("Hello, Monaco!");';
+	let isActivityBarCollapsed = writable<boolean>(false);
+
+	interface Journal {
+		id: string;
+		content: string;
+		title?: string;
+		lastSaved: Date;
+	}
+
+	const loadJournal = (journal: Journal) => {
+		if (editorComponent) {
+			editorComponent.setContent(journal.content);
+		}
+	};
+
+	let currentJournalId: string | null = null;
+	
 	const saveJournal = async () => {
-		if (!firebaseAuth.currentUser) {
-			console.error('No user logged in');
+		if (typeof localStorage === 'undefined') return;
+		if (!firebaseAuth.currentUser || !loggedInUserEmail) {
+			console.error('No user logged in or email not available');
 			return;
 		}
 		const userId = firebaseAuth.currentUser.uid;
+		const content = editorComponent.getContent();
 		
 		try {
-			const content = editorComponent.getContent();
-			const journalRef = doc(firestore, 'journals', userId);
-			
-			await setDoc(journalRef, {
-				content,
-				lastSaved: serverTimestamp(),
-				email: loggedInUserEmail
-			}, { merge: true });
+			// If we have a current journal ID, update it
+			if (currentJournalId) {
+				const journalRef = doc(firestore, 'journals', currentJournalId);
+				await updateDoc(journalRef, {
+					content,
+					lastSaved: serverTimestamp()
+				});
+			} else {
+				// Create new journal
+				const journalId = crypto.randomUUID();
+				const journalRef = doc(firestore, 'journals', journalId);
+				await setDoc(journalRef, {
+					id: journalId,
+					content,
+					title: 'Untitled Journal',
+					lastSaved: serverTimestamp(),
+					email: loggedInUserEmail,
+					userId: userId
+				});
+				// Store the new journal ID
+				currentJournalId = journalId;
+				localStorage.setItem('currentJournalId', journalId);
+			}
 			
 			console.log('Journal saved successfully');
 		} catch (error) {
@@ -37,14 +73,62 @@
 
 	let editorComponent: MonacoEditor;
 
+	let journalList: Journal[] = [];
+	
 	onMount(() => {
+		// Initialize current journal ID
+		currentJournalId = localStorage.getItem('currentJournalId');
+		
 		// Check if the user is authenticated
-		const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
+		const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
 			if (user) {
 				// User is signed in, get their email
 				loggedInUserEmail = user.email;
 				console.log('Logged in user email:', loggedInUserEmail); // Debugging
-
+				
+				// Fetch journals from Firestore
+				try {
+					const q = query(
+						collection(firestore, 'journals'),
+						where('email', '==', user.email)
+					);
+					
+					const querySnapshot = await getDocs(q);
+					journalList = querySnapshot.docs.map(doc => ({
+						id: doc.id,
+						...doc.data()
+					} as Journal));
+					
+					// Store in localStorage
+					localStorage.setItem('journalList', JSON.stringify(journalList));
+				} catch (error) {
+					console.error('Error fetching journals:', error);
+				}
+				
+				// Check for existing journal ID
+				currentJournalId = localStorage.getItem('currentJournalId');
+				if (currentJournalId) {
+					try {
+						// Load existing journal
+						const journalRef = doc(firestore, 'journals', currentJournalId);
+						const journalDoc = await getDoc(journalRef);
+						
+						if (journalDoc.exists()) {
+							const journalData = journalDoc.data();
+							if (editorComponent) {
+								editorComponent.setContent(journalData.content);
+							}
+						} else {
+							console.log('Journal not found, creating new one');
+							currentJournalId = null;
+							localStorage.removeItem('currentJournalId');
+						}
+					} catch (error) {
+						console.error('Error loading journal:', error);
+						currentJournalId = null;
+						localStorage.removeItem('currentJournalId');
+					}
+				}
 			} else {
 				// User is not signed in, redirect to login
 				goto('/');
@@ -65,6 +149,11 @@
 </script>
 
 <Menubar loggedInUserEmail={loggedInUserEmail} onSave={saveJournal} />
+<ActivityBar 
+  bind:isCollapsed={isActivityBarCollapsed} 
+  onJournalSelect={loadJournal}
+  journals={journalList}
+/>
 
 <div class="editor-container">
 	<MonacoEditor
