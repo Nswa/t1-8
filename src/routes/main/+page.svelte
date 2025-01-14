@@ -8,9 +8,14 @@
 
 	import MonacoEditor from '$lib/editor/monaco.svelte';
 	import Menubar from '$lib/components/menubar.svelte';
+	import ActivityBar from '$lib/components/activitybar.svelte';
+	import { writable } from 'svelte/store';
+
 	let code = 'console.log("Hello, Monaco!");';
 
 	let editorComponent: MonacoEditor;
+
+	export const isActivityBarCollapsed = writable(false);
 
 	onMount(() => {
 		// Check if the user is authenticated
@@ -19,7 +24,6 @@
 				// User is signed in, get their email
 				loggedInUserEmail = user.email;
 				console.log('Logged in user email:', loggedInUserEmail); // Debugging
-
 			} else {
 				// User is not signed in, redirect to login
 				goto('/');
@@ -39,15 +43,18 @@
 	};
 </script>
 
-<Menubar loggedInUserEmail={loggedInUserEmail} />
+<Menubar {loggedInUserEmail} />
+<ActivityBar bind:isCollapsed={$isActivityBarCollapsed} />
 
-<div class="editor-container">
-	<MonacoEditor
-		bind:this={editorComponent}
-		value="~This is a regular atom with [an enveloped content] in it~Another atom with [multiple] [enveloped] [contents]"
-		language="genesis"
-		theme="genesis-theme"
-	/>
+<div class="content-wrapper" class:expanded={!$isActivityBarCollapsed}>
+	<div class="editor-container">
+		<MonacoEditor
+			bind:this={editorComponent}
+			value="~This is a regular atom with [an enveloped content] in it~Another atom with [multiple] [enveloped] [contents]"
+			language="genesis"
+			theme="genesis-theme"
+		/>
+	</div>
 </div>
 
 <style>
@@ -78,5 +85,19 @@
 
 	:global(body)::-webkit-scrollbar-thumb {
 		background: #6644b8;
+	}
+
+	.content-wrapper {
+		margin-left: 50px;
+		transition: margin-left var(--transition-speed) ease;
+	}
+
+	.content-wrapper.expanded {
+		margin-left: 250px;
+	}
+
+	.editor-container {
+		height: calc(100vh - 30px); /* Adjust for menu bar height */
+		margin-top: 30px; /* Push content below menu bar */
 	}
 </style>
