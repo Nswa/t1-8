@@ -27,6 +27,7 @@
 	},
 	"dependencies": {
 		"firebase": "^11.1.0",
+		"firestore": "^1.1.6",
 		"monaco-editor-webpack-plugin": "^7.1.0"
 	}
 }
