@@ -6,14 +6,12 @@
 	import { onAuthStateChanged, signOut } from 'firebase/auth';
 	import { doc, setDoc, updateDoc, serverTimestamp, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 	let loggedInUserEmail: string | null = null;
-	let userId: string | null = null;
 
 	import MonacoEditor from '$lib/editor/monaco.svelte';
 	import Menubar from '$lib/components/menubar.svelte';
 	import ActivityBar from '$lib/components/activitybar.svelte';
 	import { writable } from 'svelte/store';
 
-	let code = 'console.log("Hello, Monaco!");';
 	let isActivityBarCollapsed = writable<boolean>(false);
 
 	interface Journal {
@@ -31,6 +29,33 @@
 
 	let currentJournalId: string | null = null;
 	
+	let editorInitialized = false;
+	
+	let onCreateNew = () => {
+		// Clear current journal ID
+		currentJournalId = null;
+		localStorage.removeItem('currentJournalId');
+		
+		// Clear editor content immediately if component exists
+		if (editorComponent) {
+			editorComponent.setContent('~');
+			console.log('New journal initialized');
+		}
+		
+		// Set up ready listener as fallback
+		const handleReady = () => {
+			if (editorComponent) {
+				editorComponent.setContent('~');
+				console.log('New journal initialized after editor ready');
+			}
+		};
+		
+		// Set up ready listener using Svelte 5 event system
+		if (editorComponent && editorComponent.on) {
+			editorComponent.on('ready', handleReady);
+		}
+	};
+
 	const saveJournal = async () => {
 		if (typeof localStorage === 'undefined') return;
 		if (!firebaseAuth.currentUser || !loggedInUserEmail) {
@@ -49,7 +74,7 @@
 					lastSaved: serverTimestamp()
 				});
 			} else {
-				// Create new journal
+				// Create new journal only when saving
 				const journalId = crypto.randomUUID();
 				const journalRef = doc(firestore, 'journals', journalId);
 				await setDoc(journalRef, {
@@ -71,7 +96,13 @@
 		}
 	};
 
-	let editorComponent: MonacoEditor;
+	interface MonacoEditorComponent {
+		setContent: (content: string) => void;
+		getContent: () => string;
+		on?: (event: string, callback: () => void) => void;
+	}
+	
+	let editorComponent: MonacoEditorComponent;
 
 	let journalList: Journal[] = [];
 	
@@ -84,7 +115,6 @@
 			if (user) {
 				// User is signed in, get their email
 				loggedInUserEmail = user.email;
-				console.log('Logged in user email:', loggedInUserEmail); // Debugging
 				
 				// Fetch journals from Firestore
 				try {
@@ -106,7 +136,6 @@
 				}
 				
 				// Check for existing journal ID
-				currentJournalId = localStorage.getItem('currentJournalId');
 				if (currentJournalId) {
 					try {
 						// Load existing journal
@@ -119,7 +148,7 @@
 								editorComponent.setContent(journalData.content);
 							}
 						} else {
-							console.log('Journal not found, creating new one');
+							console.log('Journal not found');
 							currentJournalId = null;
 							localStorage.removeItem('currentJournalId');
 						}
@@ -148,7 +177,11 @@
 	};
 </script>
 
-<Menubar loggedInUserEmail={loggedInUserEmail} onSave={saveJournal} />
+<Menubar 
+  loggedInUserEmail={loggedInUserEmail} 
+  onSave={saveJournal}
+  onCreateNew={onCreateNew}
+/>
 <ActivityBar 
   bind:isCollapsed={isActivityBarCollapsed} 
   onJournalSelect={loadJournal}
@@ -156,11 +189,16 @@
 />
 
 <div class="editor-container">
-	<MonacoEditor
+	<svelte:component
+		this={MonacoEditor}
 		bind:this={editorComponent}
 		value="~This is a regular atom with [an enveloped content] in it~Another atom with [multiple] [enveloped] [contents]"
 		language="genesis"
 		theme="genesis-theme"
+		on:ready={() => {
+			editorInitialized = true;
+			console.log('Editor initialized');
+		}}
 	/>
 </div>
 

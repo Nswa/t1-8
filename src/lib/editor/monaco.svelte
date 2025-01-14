@@ -21,6 +21,30 @@
 		return '';
 	};
 
+	// Method to set editor content
+	export const setContent = (content: string) => {
+		if (editor) {
+			editor.setValue(content);
+		}
+	};
+
+	// Event listener system
+	const eventListeners = new Map<string, (() => void)[]>();
+	export const on = (event: string, callback: () => void) => {
+		if (!eventListeners.has(event)) {
+			eventListeners.set(event, []);
+		}
+		eventListeners.get(event)?.push(callback);
+	};
+
+	// Dispatch events to listeners
+	const dispatchEvent = (event: string) => {
+		const listeners = eventListeners.get(event);
+		if (listeners) {
+			listeners.forEach(callback => callback());
+		}
+	};
+
 	onMount(() => {
 		const initializeEditor = async () => {
 			try {
@@ -44,6 +68,9 @@
 
 				// Only add event listeners after editor is initialized
 				if (editor) {
+					// Dispatch ready event
+					dispatchEvent('ready');
+					
 					// Handle Enter key
 					editor.onKeyDown((e: Monaco.IKeyboardEvent) => {
 						if (e.keyCode === monaco.KeyCode.Enter) {

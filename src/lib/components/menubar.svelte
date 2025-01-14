@@ -10,10 +10,14 @@
 	let showUserMenu = false; // State to control the visibility of the user menu
 
 	export let onSave: () => void;
+	export let onCreateNew: () => void = () => {};
 
 	const menuItems = [
 		{ name: 'File', items: [
-			{ name: 'New File', action: () => {} },
+			{ name: 'New File', action: () => { 
+				console.log('Creating new journal...');
+				onCreateNew(); 
+			} },
 			{ name: 'Open File...', action: () => {} },
 			{ name: 'Save', action: () => onSave() },
 			{ name: 'Save As...', action: () => {} },
