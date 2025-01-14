@@ -56,6 +56,28 @@
 		}
 	};
 
+	const fetchJournals = async () => {
+		if (!firebaseAuth.currentUser) return;
+		
+		try {
+			const q = query(
+				collection(firestore, 'journals'),
+				where('email', '==', firebaseAuth.currentUser.email)
+			);
+			
+			const querySnapshot = await getDocs(q);
+			journalList = querySnapshot.docs.map(doc => ({
+				id: doc.id,
+				...doc.data()
+			} as Journal));
+			
+			// Store in localStorage
+			localStorage.setItem('journalList', JSON.stringify(journalList));
+		} catch (error) {
+			console.error('Error fetching journals:', error);
+		}
+	};
+
 	const saveJournal = async () => {
 		if (typeof localStorage === 'undefined') return;
 		if (!firebaseAuth.currentUser || !loggedInUserEmail) {
@@ -76,11 +98,15 @@
 			} else {
 				// Create new journal only when saving
 				const journalId = crypto.randomUUID();
+				// Extract first 5 words as title
+				const firstLine = content.split('\n')[0];
+				const title = firstLine.split(/\s+/).slice(0, 5).join(' ') || 'Untitled Journal';
+				
 				const journalRef = doc(firestore, 'journals', journalId);
 				await setDoc(journalRef, {
 					id: journalId,
 					content,
-					title: 'Untitled Journal',
+					title,
 					lastSaved: serverTimestamp(),
 					email: loggedInUserEmail,
 					userId: userId
@@ -90,6 +116,8 @@
 				localStorage.setItem('currentJournalId', journalId);
 			}
 			
+			// Refresh journal list after saving
+			await fetchJournals();
 			console.log('Journal saved successfully');
 		} catch (error) {
 			console.error('Error saving journal:', error);
