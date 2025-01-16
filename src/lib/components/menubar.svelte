@@ -13,57 +13,12 @@
 	export let onCreateNew: () => void = () => {};
 
 	const menuItems = [
-		{ name: 'File', items: [
-			{ name: 'New File', action: () => { 
-				console.log('Creating new journal...');
-				onCreateNew(); 
-			} },
-			{ name: 'Open File...', action: () => {} },
-			{ name: 'Save', action: () => onSave() },
-			{ name: 'Save As...', action: () => {} },
-			{ name: 'Exit', action: () => {} }
-		] },
-		{ name: 'Edit', items: [
-			{ name: 'Undo', action: () => {} },
-			{ name: 'Redo', action: () => {} },
-			{ name: 'Cut', action: () => {} },
-			{ name: 'Copy', action: () => {} },
-			{ name: 'Paste', action: () => {} }
-		] },
-		{ name: 'Selection', items: [
-			{ name: 'Select All', action: () => {} },
-			{ name: 'Expand Selection', action: () => {} },
-			{ name: 'Shrink Selection', action: () => {} }
-		] },
-		{ name: 'View', items: [
-			{ name: 'Command Palette...', action: () => {} },
-			{ name: 'Explorer', action: () => {} },
-			{ name: 'Search', action: () => {} },
-			{ name: 'Source Control', action: () => {} },
-			{ name: 'Run', action: () => {} }
-		] },
-		{ name: 'Go', items: [
-			{ name: 'Back', action: () => {} },
-			{ name: 'Forward', action: () => {} },
-			{ name: 'Go to File...', action: () => {} },
-			{ name: 'Go to Symbol...', action: () => {} }
-		] },
-		{ name: 'Run', items: [
-			{ name: 'Start Debugging', action: () => {} },
-			{ name: 'Run Without Debugging', action: () => {} },
-			{ name: 'Stop Debugging', action: () => {} }
-		] },
-		{ name: 'Terminal', items: [
-			{ name: 'New Terminal', action: () => {} },
-			{ name: 'Split Terminal', action: () => {} },
-			{ name: 'Run Task...', action: () => {} }
-		] },
-		{ name: 'Help', items: [
-			{ name: 'Welcome', action: () => {} },
-			{ name: 'Documentation', action: () => {} },
-			{ name: 'Release Notes', action: () => {} },
-			{ name: 'About', action: () => {} }
-		] }
+		{ name: 'New File', action: () => { 
+			console.log('Creating new journal...');
+			onCreateNew(); 
+		} },
+		{ name: 'Save', action: () => onSave() },
+		{ name: 'Logout', action: () => logout() }
 	];
 
 	function performSearch() {
@@ -105,16 +60,11 @@
 
 <nav class="menu-bar">
 	<div class="menu-items">
-		{#each menuItems as { name, items }}
-			<div class="menu-item" data-menu={name.toLowerCase()}>
-				{name}
-				<div class="dropdown">
-					{#each items as item}
-						<div class="dropdown-item" on:click={item.action}>{item.name}</div>
-					{/each}
-				</div>
-			</div>
-		{/each}
+	{#each menuItems as item}
+		<div class="menu-item" on:click={item.action}>
+			{item.name}
+		</div>
+	{/each}
 	</div>
 	<div class="search-container">
 		<input
