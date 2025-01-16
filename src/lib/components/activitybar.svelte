@@ -145,9 +145,14 @@
   }
 </style>
 
-<div class="activity-bar" class:collapsed={$isCollapsed}>
+<div 
+  class="activity-bar" 
+  class:collapsed={$isCollapsed}
+  on:mouseenter={() => $isCollapsed = false}
+  on:mouseleave={() => $isCollapsed = true}
+>
   {#if $isCollapsed}
-    <div class="handle" on:click={() => $isCollapsed = false}></div>
+    <div class="handle"></div>
   {/if}
   
   <div class="header">
