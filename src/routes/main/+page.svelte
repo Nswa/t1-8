@@ -221,13 +221,20 @@
   bind:isCollapsed={isActivityBarCollapsed} 
   onJournalSelect={loadJournal}
   journals={journalList}
+  activeJournalId={currentJournalId}
 />
 
 <div class="editor-container">
 	<svelte:component
 		this={MonacoEditor}
 		bind:this={editorComponent}
-		value="~This is a regular atom with [an enveloped content] in it~Another atom with [multiple] [enveloped] [contents]"
+	value="~This is a regular atom with [an enveloped content] in it~Another atom with [multiple] [enveloped] [contents]"
+		on:change={(e) => {
+			const content = e.detail;
+			const lines = content.split('\n');
+			const modifiedLines = lines.map((line: string) => line.startsWith('~') ? line : `~${line}`);
+			editorComponent.setContent(modifiedLines.join('\n'));
+		}}
 		language="genesis"
 		theme="genesis-theme"
 		on:ready={() => {

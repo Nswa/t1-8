@@ -15,6 +15,7 @@
   export let isCollapsed: Writable<boolean>;
   export let onJournalSelect: (journal: Journal) => void = () => {};
   export let journals: Journal[] = [];
+  export let activeJournalId: string | null = null;
   
   let isLoading = false;
   let error: string | null = null;
@@ -114,6 +115,15 @@
     background: #444;
   }
 
+  .journal-item.selected {
+    background: #007acc;
+    color: white;
+  }
+
+  .journal-item.selected:hover {
+    background: #006bb3;
+  }
+
   .loading,
   .error {
     padding: 1rem;
@@ -193,8 +203,12 @@
       {#each journals as journal}
         <div 
           class="journal-item" 
+          class:selected={activeJournalId === journal.id}
           transition:fly={{ y: 20, duration: 200 }}
-          on:click={() => onJournalSelect(journal)}
+          on:click={() => {
+            activeJournalId = journal.id;
+            onJournalSelect(journal);
+          }}
           on:contextmenu|preventDefault={(e) => {
             selectedJournal = journal;
             contextMenuPosition = { x: e.clientX, y: e.clientY };
