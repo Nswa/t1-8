@@ -3,13 +3,13 @@
 	import loader from '@monaco-editor/loader';
 	import { configureGenesisDarkTheme } from './theme/genesis-dark';
 	import { setupGenesisLanguage } from './lang/genesis';
-	import type * as Monaco from 'monaco-editor';
+	import type * as Monaco from 'monaco-editor/esm/vs/editor/editor.api';
 
 	export let value = '';
 	export let language = 'genesis';
 	export let theme = 'genesis-theme';
 
-	let editor: Monaco.editor.IStandaloneCodeEditor;
+	let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
 	let monacoElement: HTMLElement;
 	let monaco: typeof Monaco;
 	let showAssistant = false;
@@ -165,28 +165,28 @@ ${getContent()}`
 					fontFamily: "'Source Serif Pro', 'Crimson Pro', Georgia, serif",
 					lineHeight: 24,
 					fontLigatures: true,
-					placeholder: '~continue typing...'
+					placeholder: 'continue typing...'
 				});
 
 				if (editor) {
 					dispatchEvent('ready');
 					
-					editor.onKeyDown((e: Monaco.IKeyboardEvent) => {
+					editor?.onKeyDown((e) => {
 						if (e.keyCode === monaco.KeyCode.Enter) {
 							e.preventDefault();
-							const selection = editor.getSelection();
+							const selection = editor?.getSelection();
 							const position = selection?.getPosition();
 
 							if (position) {
-								editor.executeEdits('insert-newline', [
+								editor?.executeEdits('insert-newline', [
 									{
-										range: new monaco.Range(
+										range: new monaco.Selection(
 											position.lineNumber,
 											position.column,
 											position.lineNumber,
 											position.column
 										),
-										text: '\n~'
+										text: '\n'
 									}
 								]);
 							}
@@ -194,13 +194,7 @@ ${getContent()}`
 					});
 
 					editor.onDidChangeModelContent(() => {
-						const model = editor.getModel();
-						if (model) {
-							const content = model.getValue();
-							if (content && !content.startsWith('~')) {
-								editor.setValue('~' + content);
-							}
-						}
+						// No automatic tilde handling
 					});
 				}
 			} catch (error) {

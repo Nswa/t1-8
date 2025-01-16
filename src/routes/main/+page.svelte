@@ -246,9 +246,7 @@
 	value="~This is a regular atom with [an enveloped content] in it~Another atom with [multiple] [enveloped] [contents]"
 		on:change={(e) => {
 			const content = e.detail;
-			const lines = content.split('\n');
-			const modifiedLines = lines.map((line: string) => line.startsWith('~') ? line : `~${line}`);
-			editorComponent.setContent(modifiedLines.join('\n'));
+			editorComponent.setContent(content);
 		}}
 		language="genesis"
 		theme="genesis-theme"
