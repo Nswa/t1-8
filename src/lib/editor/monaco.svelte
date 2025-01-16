@@ -12,17 +12,29 @@
 	let editor: Monaco.editor.IStandaloneCodeEditor;
 	let monacoElement: HTMLElement;
 	let monaco: typeof Monaco;
-	let showModal = false;
-	let userQuestion = '';
-	let summary = '';
+	let showAssistant = false;
+	type ChatMessage = {
+		role: 'user' | 'assistant';
+		content: string;
+	};
+
+	let chatMessages: ChatMessage[] = [];
+	let userInput = '';
 	let isLoading = false;
 	let errorMessage = '';
+	let conversationId: string | null = null;
 
-	async function handleSummarize() {
+	async function sendMessage() {
+		if (!userInput.trim() || isLoading) return;
+		
 		try {
 			isLoading = true;
 			errorMessage = '';
-			const content = getContent();
+			
+			// Add user message to chat
+			chatMessages = [...chatMessages, { role: 'user', content: userInput }];
+			const currentInput = userInput;
+			userInput = '';
 			
 			const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
 				method: 'POST',
@@ -35,12 +47,23 @@
 					messages: [
 						{
 							role: "system",
-							content: "You are a helpful assistant that summarizes and analyzes code content."
+							content: `You are a journaling assistant. Follow these rules:
+1. Only provide assistance when explicitly asked
+2. Keep responses concise and to the point
+3. Never offer unsolicited advice or analysis
+4. When asked about specific content, quote it exactly and provide brief, relevant suggestions
+5. Maintain a neutral, helpful tone
+6. If unsure what's being asked, request clarification
+7. Never use markdown formatting (no **, *, etc.)
+8. Use these HTML-like tags for styling:
+   - <highlight> for important references
+   - <important> for key points
+   - <suggestion> for recommendations
+   
+Current journal content:
+${getContent()}`
 						},
-						{
-							role: "user",
-							content: `Content: ${content}\n\nQuestion: ${userQuestion}`
-						}
+						...chatMessages
 					],
 					temperature: 0.7
 				})
@@ -51,21 +74,54 @@
 			}
 
 			const data = await response.json();
-			summary = data.choices[0].message.content;
+			const assistantMessage = data.choices[0].message.content;
+			
+			// Add assistant response to chat
+			chatMessages = [...chatMessages, { role: 'assistant', content: assistantMessage }];
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-			console.error('Summarization error:', error);
+			console.error('Assistant error:', error);
 		} finally {
 			isLoading = false;
 		}
 	}
 
-	// Existing methods remain unchanged
+	function handleKeyPress(event: KeyboardEvent) {
+		if (event.key === 'Enter' && !event.shiftKey) {
+			event.preventDefault();
+			sendMessage();
+		}
+	}
+
 	export const getContent = () => {
 		if (editor) {
 			return editor.getValue();
 		}
 		return '';
+	};
+
+	let decorationIds: string[] = [];
+
+	export const highlightContent = (ranges: { startLine: number, startColumn: number, endLine: number, endColumn: number }[], className: string) => {
+		if (editor) {
+			// Clear existing decorations
+			decorationIds = editor.deltaDecorations(decorationIds, []);
+			
+			// Create new decorations
+			const newDecorations = ranges.map(range => ({
+				range: new monaco.Range(range.startLine, range.startColumn, range.endLine, range.endColumn),
+				options: {
+					className: className,
+					inlineClassName: className,
+					overviewRuler: {
+						color: '#FFEB3B',
+						position: monaco.editor.OverviewRulerLane.Full
+					}
+				}
+			}));
+			
+			decorationIds = editor.deltaDecorations([], newDecorations);
+		}
 	};
 
 	export const setContent = (content: string) => {
@@ -103,6 +159,8 @@
 					automaticLayout: true,
 					wordWrap: 'on',
 					minimap: { enabled: false },
+					lineNumbers: 'on',
+					lineNumbersMinChars: 3,
 					fontSize: 16,
 					fontFamily: "'Source Serif Pro', 'Crimson Pro', Georgia, serif",
 					lineHeight: 24,
@@ -160,20 +218,24 @@
 	});
 </script>
 
-<!-- svelte-ignore element_invalid_self_closing_tag -->
 <div bind:this={monacoElement} class="editor-container" />
 
 <style>
 	@import '$lib/editor/editor.css';
 
-	.floating-button-container {
-		position: absolute;
+	.editor-container {
+		height: calc(100vh - 60px);
+		width: 100%;
+	}
+
+	.assistant-container {
+		position: fixed;
 		right: 20px;
 		bottom: 20px;
 		z-index: 1000;
 	}
 
-	.floating-button {
+	.assistant-button {
 		width: 50px;
 		height: 50px;
 		border-radius: 50%;
@@ -183,126 +245,183 @@
 		box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 		cursor: pointer;
 		transition: background-color 0.2s;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
-	.floating-button:hover {
+	.assistant-button:hover {
 		background-color: #0056b3;
 	}
 
-	.modal-overlay {
+	.assistant-panel {
 		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background: rgba(0,0,0,0.5);
-		z-index: 999;
-	}
-
-	.modal-content {
-		position: absolute;
 		right: 20px;
 		bottom: 80px;
+		width: 350px;
 		background: white;
-		padding: 20px;
 		border-radius: 8px;
 		box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-		min-width: 300px;
-		max-width: 500px;
-		z-index: 1000;
-	}
-
-	.input-group {
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
-		margin-bottom: 20px;
 	}
 
-	.question-input {
-		width: 100%;
-		min-height: 100px;
-		padding: 10px;
-		border: 1px solid #ddd;
+	.assistant-header {
+		padding: 12px;
+		background: #f5f5f5;
+		border-bottom: 1px solid #ddd;
+		border-radius: 8px 8px 0 0;
+	}
+
+	.assistant-body {
+		padding: 12px;
+		flex-grow: 1;
+		overflow-y: auto;
+		max-height: 300px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.message {
+		max-width: 90%;
+		padding: 6px 10px;
+		border-radius: 8px;
+		word-wrap: break-word;
+		line-height: 1.4;
+		font-size: 14px;
+		margin: 4px 0;
+	}
+
+	.user-message {
+		background: #007bff;
+		color: white;
+		align-self: flex-end;
+		border-bottom-right-radius: 4px;
+	}
+
+	.assistant-message {
+		background: #f8f9fa;
+		color: #212529;
+		align-self: flex-start;
+		border-bottom-left-radius: 4px;
+		position: relative;
+		border: 1px solid #dee2e6;
+	}
+
+	.highlight-reference {
+		background-color: rgba(255, 235, 59, 0.3);
+		border-radius: 2px;
+		padding: 2px;
+	}
+
+	.important-text {
+		color: #d32f2f;
+		font-weight: 500;
+	}
+
+	.suggestion-text {
+		color: #1976d2;
+		font-style: italic;
+	}
+
+	.response-tag {
+		position: absolute;
+		right: 8px;
+		top: 8px;
+		font-size: 0.8em;
+		color: #666;
+		background: rgba(255, 255, 255, 0.8);
+		padding: 2px 4px;
 		border-radius: 4px;
-		resize: vertical;
 	}
 
-	.submit-btn {
-		padding: 10px 20px;
-		background-color: #007bff;
+	.input-container {
+		display: flex;
+		gap: 8px;
+		padding: 12px;
+		border-top: 1px solid #ddd;
+	}
+
+	.chat-input {
+		flex: 1;
+		padding: 8px 12px;
+		border: 1px solid #ddd;
+		border-radius: 8px;
+		resize: none;
+		min-height: 40px;
+		max-height: 100px;
+	}
+
+	.send-button {
+		padding: 8px 16px;
+		background: #007bff;
 		color: white;
 		border: none;
-		border-radius: 4px;
+		border-radius: 8px;
 		cursor: pointer;
-		transition: background-color 0.2s;
 	}
 
-	.submit-btn:hover {
-		background-color: #0056b3;
+	.send-button:hover {
+		background: #0056b3;
 	}
 
-	.submit-btn:disabled {
-		background-color: #ccc;
+	.send-button:disabled {
+		background: #ccc;
 		cursor: not-allowed;
-	}
-
-	.summary-result {
-		margin-top: 20px;
-		padding: 15px;
-		background-color: #f5f5f5;
-		border-radius: 4px;
-	}
-
-	.error-message {
-		color: #dc3545;
-		margin-top: 10px;
 	}
 </style>
 
-<div class="floating-button-container">
-	<button class="floating-button" on:click={() => showModal = !showModal}>
+<div class="assistant-container">
+	<button class="assistant-button" on:click={() => {
+		showAssistant = !showAssistant;
+		if (showAssistant && chatMessages.length === 0) {
+			chatMessages = [{
+				role: 'assistant',
+				content: 'Hello! I can help analyze your journal entries. Try asking about specific lines or requesting writing suggestions.'
+			}];
+		}
+	}}>
 		<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-			<path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2ZM20 16H6L4 18V4H20V16Z" fill="currentColor"/>
-			<path d="M7 9H17V11H7V9ZM7 12H14V14H7V12Z" fill="currentColor"/>
+			<path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z" fill="currentColor"/>
 		</svg>
 	</button>
 
-	{#if showModal}
-		<div class="modal-overlay" on:click|self={() => showModal = false}>
-			<div class="modal-content">
-				<h3>Content Summarization</h3>
-				<div class="input-group">
-					<textarea 
-						bind:value={userQuestion}
-						placeholder="Ask a question about the content..."
-						class="question-input"
-					></textarea>
-					<button 
-						on:click={handleSummarize}
-						class="submit-btn"
-						disabled={isLoading}
-					>
-						{#if isLoading}
-							Summarizing...
-						{:else}
-							Summarize
-						{/if}
-					</button>
-				</div>
-				
-				{#if summary}
-					<div class="summary-result">
-						<h4>Summary:</h4>
-						<p>{summary}</p>
+	{#if showAssistant}
+		<div class="assistant-panel">
+			<div class="assistant-header">
+				<h3>Journaling Assistant</h3>
+			</div>
+			<div class="assistant-body">
+				{#each chatMessages as message}
+					<div class="message {message.role}-message">
+						{@html message.content
+							.replace(/<highlight>(.*?)<\/highlight>/g, '<span class="highlight-reference">$1</span>')
+							.replace(/<important>(.*?)<\/important>/g, '<span class="important-text">$1</span>')
+							.replace(/<suggestion>(.*?)<\/suggestion>/g, '<span class="suggestion-text">$1</span>')}
+					</div>
+				{/each}
+				{#if isLoading}
+					<div class="message assistant-message">
+						Thinking...
 					</div>
 				{/if}
-
-				{#if errorMessage}
-					<div class="error-message">
-						Error: {errorMessage}
-					</div>
-				{/if}
+			</div>
+			<div class="input-container">
+				<textarea
+					class="chat-input"
+					bind:value={userInput}
+					on:keydown={handleKeyPress}
+					placeholder="Type your message..."
+					disabled={isLoading}
+				/>
+				<button
+					class="send-button"
+					on:click={sendMessage}
+					disabled={isLoading || !userInput.trim()}
+				>
+					Send
+				</button>
 			</div>
 		</div>
 	{/if}
