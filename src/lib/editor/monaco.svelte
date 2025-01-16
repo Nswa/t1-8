@@ -160,10 +160,14 @@ ${getContent()}`
 					wordWrap: 'on',
 					minimap: { enabled: false },
 					lineNumbers: 'on',
-					lineNumbersMinChars: 3,
-					fontSize: 16,
+					lineNumbersMinChars: 4,
+					fontSize: 18,
 					fontFamily: "'Source Serif Pro', 'Crimson Pro', Georgia, serif",
-					lineHeight: 24,
+					lineHeight: 28,
+					renderLineHighlight: 'all',
+					renderWhitespace: 'none',
+					glyphMargin: false,
+					lineDecorationsWidth: 10,
 					fontLigatures: true,
 					placeholder: 'continue typing...'
 				});

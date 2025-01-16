@@ -14,3 +14,13 @@
     width: 100%;        
     height: 100%;
 }
+
+/* New styles for font size and horizontal rules */
+:global(.monaco-editor .view-lines) {
+    font-size: 16px;
+}
+
+:global(.monaco-editor .view-line) {
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 2px;
+}
