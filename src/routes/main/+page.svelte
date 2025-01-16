@@ -166,6 +166,21 @@
 					
 					// Store in localStorage
 					localStorage.setItem('journalList', JSON.stringify(journalList));
+
+					// If no current journal ID, load the most recent one
+					if (!currentJournalId && journalList.length > 0) {
+						// Find journal with latest lastSaved timestamp
+						const latestJournal = journalList.reduce((prev, curr) => 
+							curr.lastSaved > prev.lastSaved ? curr : prev
+						);
+						
+						currentJournalId = latestJournal.id;
+						localStorage.setItem('currentJournalId', latestJournal.id);
+						
+						if (editorComponent) {
+							editorComponent.setContent(latestJournal.content);
+						}
+					}
 				} catch (error) {
 					console.error('Error fetching journals:', error);
 				}
